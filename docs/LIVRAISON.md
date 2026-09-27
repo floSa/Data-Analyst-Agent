@@ -24,6 +24,7 @@ data-analyst-agent est un agent conversationnel d'analyse de données, installé
 - **Reprise** : un tableau ou un graphique produit peut être repris et modifié.
 - **Comptes** : chaque compte est cloisonné. Hormis `/health`, aucune route n'est accessible sans session.
 - **Modèle de langage** : tout LLM servi sur site derrière une API compatible OpenAI avec appel d'outils. Aucune donnée ne sort de la machine.
+- **Matériel** : une carte graphique d'au moins 12 Gio libres pour le moteur, 16 Go de mémoire vive, 45 Go de disque ([INSTALLATION.md](INSTALLATION.md#ressources-matérielles)).
 
 La démonstration de ces capacités : [DEMONSTRATION.md](DEMONSTRATION.md).
 

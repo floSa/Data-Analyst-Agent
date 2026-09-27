@@ -4,7 +4,7 @@ Cette procédure installe data-analyst-agent en service sur une machine Linux, j
 
 | Section | Contenu |
 |---|---|
-| [1. Prérequis](#1-prérequis) | Ce que la machine doit fournir |
+| [1. Prérequis](#1-prérequis) | Logiciels, mémoire GPU, mémoire vive, disque |
 | [2. Récupérer le dépôt](#2-récupérer-le-dépôt) | Emplacement du code |
 | [3. Le fichier d'environnement](#3-le-fichier-denvironnement) | Réglages et secrets |
 | [4. Le dossier de données](#4-le-dossier-de-données) | Ce qui persiste |
@@ -30,6 +30,50 @@ L'exploitation courante (journaux, sauvegarde, restauration, mise à jour) : [EX
 
 - Le moteur LLM est installé séparément. Réglages requis pour l'appel d'outils : [MOTEUR.md](MOTEUR.md).
 - Python, `uv` et les dépendances sont dans l'image : la machine n'a besoin que de Docker.
+
+### Ressources matérielles
+
+Relevé du 27 septembre 2026 sur le service en place : carte NVIDIA L4 (22 Gio), modèle `google/gemma-4-E4B-it-qat-w4a16-ct` servi par vLLM avec `--max-model-len 32768` et `--gpu-memory-utilization 0.55`.
+
+**Mémoire GPU (moteur uniquement).**
+
+| Poste | Taille |
+|---|---|
+| Poids du modèle | 9,81 Gio |
+| Activations et CUDAGraph | 1,05 Gio |
+| Cache de contexte | 1,56 Gio, soit 75 509 tokens (2,3 requêtes de 32 768 tokens) |
+| **Occupation mesurée** | **13,9 Gio** |
+
+- Minimum pour une requête de 32 768 tokens : environ 12 Gio libres.
+- Une carte de 16 Go convient, avec `--gpu-memory-utilization` autour de 0,85, sans autre usage de la carte. Cette configuration est estimée, non testée.
+- `--gpu-memory-utilization` n'est pas une borne stricte : l'occupation réelle dépasse le budget d'environ 1,8 Gio ([MOTEUR.md](MOTEUR.md#75-la-mémoire-et-ce-que---gpu-memory-utilization-ne-borne-pas)).
+- L'application, le bac à sable et Postgres n'utilisent pas le GPU.
+
+**Mémoire vive.**
+
+| Composant | Mémoire utilisée |
+|---|---|
+| Moteur vLLM | 5,0 Gio, plus 11 Gio de cache disque des fichiers du modèle, libérable |
+| Application | 0,3 Gio |
+| Mandataire HTTPS | 0,03 Gio |
+| Postgres | 0,06 Gio |
+| Bac à sable | jusqu'à 1 Gio par analyse, 4 analyses simultanées au plus (`DAA_SANDBOX_MAX_SESSIONS`) |
+
+16 Go de mémoire vive suffisent ; 32 Go laissent le modèle en cache disque.
+
+**Disque.**
+
+| Élément | Taille |
+|---|---|
+| Image vLLM | 28,8 Go |
+| Modèle, cache Hugging Face | 11 Go |
+| Image de l'application | 1,6 Go |
+| Image du bac à sable | 1,0 Go |
+| Dossier de données | selon l'usage (25 Mo à la livraison) |
+
+Prévoir 45 Go, plus les sauvegardes.
+
+**Démarrage du moteur.** Environ 4 minutes, poids en cache, dont 68 s de compilation.
 
 ## 2. Récupérer le dépôt
 
