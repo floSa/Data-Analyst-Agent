@@ -200,7 +200,7 @@ sudo systemctl restart daa
 curl --cacert /etc/data-analyst-agent/tls/ca.crt https://$(hostname -f):8443/health
 ```
 
-Le service écoute sur `8443` (HTTPS) et `8081` (redirection vers `8443`).
+Le service écoute sur `8443` (HTTPS) et `8082` (redirection vers `8443`).
 
 ## 9. Créer le premier compte
 

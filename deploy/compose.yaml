@@ -107,7 +107,7 @@ services:
     # prend, pas un défaut qu'on subit.
     ports:
       - "${DAA_HTTPS_BIND:-0.0.0.0}:${DAA_HTTPS_PORT:-8443}:443"
-      - "${DAA_HTTPS_BIND:-0.0.0.0}:${DAA_HTTP_REDIRECT_PORT:-8081}:80"
+      - "${DAA_HTTPS_BIND:-0.0.0.0}:${DAA_HTTP_REDIRECT_PORT:-8082}:80"
 
     # Adresse FIXE, parce que c'est elle que l'application déclare de confiance.
     # Laissée au hasard, la déclaration viserait à côté au premier redémarrage
