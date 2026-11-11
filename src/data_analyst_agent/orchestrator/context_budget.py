@@ -95,7 +95,7 @@ class ContextLimits(BaseModel):
     token_budget: int = 8000
     # Fenêtre réellement servie par le serveur (0 = inconnue) et rapport
     # plancher du filet : tous deux servent à CONSTATER, jamais à couper.
-    model_window: int = 32768
+    model_window: int = 16384
     overflow_ratio: float = 0.4
 
     @classmethod
@@ -283,9 +283,12 @@ def detect_overflow(
 
 # -- refus explicite ----------------------------------------------------------
 
-# Le serveur refuse un prompt trop long par une erreur HTTP : un 400 dont le
-# corps dit « This model's maximum context length is N tokens. However, you
-# requested M tokens » (constaté, docs/MOTEUR.md §3.3). Le refus est traité à
+# Le serveur refuse un prompt trop long par une erreur HTTP : un 400. Deux
+# formulations constatées (docs/MOTEUR.md) : celle de vLLM, « This model's
+# maximum context length is N tokens. However, you requested M tokens », et celle
+# du service central actuel (LiteLLM devant llama.cpp), « litellm.
+# ContextWindowExceededError … request (N tokens) exceeds the available context
+# size (16384 tokens) » avec `type: exceed_context_size_error`. Le refus est traité à
 # côté de la troncature silencieuse détectée plus haut : un serveur peut faire
 # l'un ou l'autre, et le code tient les deux cas plutôt que de parier.
 STATUTS_REFUS = frozenset({400, 413, 422})
@@ -293,6 +296,8 @@ MOTIFS_REFUS = re.compile(
     r"maximum context length"
     r"|context[ _]length"
     r"|context window"
+    r"|context size"
+    r"|contextwindowexceeded"
     r"|context_length_exceeded"
     r"|reduce the length"
     r"|prompt is too long",
@@ -310,11 +315,13 @@ CONTEXT_REFUSAL_MESSAGE = (
 def is_context_refusal(exc: BaseException) -> bool:
     """Reconnaît le refus explicite d'un serveur dont la fenêtre est dépassée.
 
-    **Confrontée au corps d'erreur réel de vLLM 0.28** (docs/MOTEUR.md §3.3) :
-    reconnue sans modification, sur un 400 dont le message commence par « This
-    model's maximum context length is 32768 tokens ». Et pas de faux positif sur
-    les deux autres 400 que rend vLLM — ceux qui réclament ses options de tool
-    calling —, leurs messages ne parlant pas de contexte.
+    **Confrontée aux corps d'erreur réels** (docs/MOTEUR.md) : celui de vLLM 0.28
+    (« This model's maximum context length is 32768 tokens ») et celui du service
+    central LiteLLM/llama.cpp (« ContextWindowExceededError … exceeds the
+    available context size (16384 tokens) »), qui n'est PAS reconnu par les
+    motifs de vLLM seuls — d'où « context size » et « ContextWindowExceeded ».
+    Pas de faux positif sur les autres 400 (modèle inconnu, options de tool
+    calling), dont les messages ne parlent pas de contexte.
 
     Ce qui est tenu ici : le refus ne se perd plus dans un « Je n'ai pas pu
     répondre : ModelHTTPError: … » que personne ne saurait relier à la longueur

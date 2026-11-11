@@ -285,6 +285,20 @@ VLLM_400 = (
 )
 
 
+# Corps réel renvoyé par le service central (LiteLLM devant llama.cpp), HTTP 400.
+LITELLM_400 = (
+    "litellm.ContextWindowExceededError: litellm.BadRequestError: "
+    'ContextWindowExceededError: Hosted_vllmException - {"error":{"code":400,'
+    '"message":"request (20010 tokens) exceeds the available context size '
+    '(16384 tokens), try increasing it","type":"exceed_context_size_error",'
+    '"n_prompt_tokens":20010,"n_ctx":16384}}'
+)
+
+
+def test_refus_du_service_central_reconnu():
+    assert is_context_refusal(ModelHTTPError(400, "chat", body=LITELLM_400)) is True
+
+
 def test_refus_de_vllm_reconnu():
     assert is_context_refusal(ModelHTTPError(400, "vllm", body=VLLM_400)) is True
 
