@@ -1,6 +1,58 @@
-# Le moteur d'inférence : vLLM, ce qui est mesuré
+# Le moteur d'inférence : service LLM central, puis historique vLLM
 
-Le projet n'a qu'un moteur : **vLLM**, servi par le dépôt compagnon
+## 0. État actuel : le service central LLM-Service
+
+Le projet se branche sur le **service LLM central** (dépôt compagnon
+`LLM-Service`, en lecture seule pour ce projet) : LiteLLM devant llama.cpp.
+
+| Réglage | Valeur |
+|---|---|
+| `DAA_LLM_BASE_URL` | `http://127.0.0.1:8080/v1` sur l'hôte ; `http://llm-central:8080/v1` depuis un conteneur du réseau Docker externe `llm-net` |
+| `DAA_LLM_MODEL` | `chat` (Qwen3.5-4B) |
+| `DAA_LLM_API_KEY` | `LITELLM_MASTER_KEY` du `.env` de LLM-Service, dans le `.env` de ce projet (non suivi) — jamais dans un fichier versionné |
+| `DAA_LLM_THINKING` | `false` : Qwen3.5 réfléchit par défaut ; l'application le coupe à chaque requête (`extra_body.chat_template_kwargs.enable_thinking=false`) |
+| `DAA_CONTEXT_MODEL_WINDOW` | `16384` |
+
+**Limite à connaître : 16 384 tokens par requête, prompt ET réponse** (32 768
+avec l'ancien vLLM). Elle appartient à LLM-Service et ne se relève pas d'ici.
+Le budget du planificateur (`DAA_CONTEXT_TOKEN_BUDGET=8000`) et le plafond du
+dictionnaire (`DAA_DICTIONARY_MAX_CHARS=8000`, ~2 500 tokens) restent sous cette
+fenêtre ; une conversation longue ou une grosse source verront leurs tableaux
+évincés plus tôt qu'avant. Au besoin, baisser `DAA_CONTEXT_TOKEN_BUDGET` et
+`DAA_CONTEXT_ARTIFACT_WINDOW`.
+
+### Écarts vLLM → LiteLLM/llama.cpp constatés (2026-11-11)
+
+| Point | vLLM (historique, §1 et suivants) | Service central |
+|---|---|---|
+| Tool calling | options de lancement requises (`--enable-auto-tool-choice`, analyseur) | fonctionne tel quel à travers LiteLLM (appel `tool_calls` vérifié ; planificateur et agent SQL d'un bout à l'autre) |
+| Réflexion | sans objet | active par défaut, coupée par requête ; raisonnement dans `message.reasoning_content` si activée |
+| Refus de contexte | 400 `This model's maximum context length is N tokens…` | 400 `litellm.ContextWindowExceededError … request (N tokens) exceeds the available context size (16384 tokens)`, `type: exceed_context_size_error`. **Non reconnu par les anciens motifs** : `is_context_refusal` a gagné `context size` et `ContextWindowExceeded` |
+| `/tokenize` | présent | **absent** (404). Sans conséquence : le code n'en dépend pas (l'estimation est en caractères, `context_budget.estimate_tokens`) ; il n'apparaît que dans des mesures historiques |
+| Tokens de prompt mesurés | `usage.prompt_tokens` | `usage.prompt_tokens` aussi : la détection de débordement (`resultat.usage.input_tokens`) reste valable |
+
+**Banc du 2026-11-11 contre le central** (`scripts/vllm_bench.py`) : planificateur
+OK, agent SQL OK (`grounded=True`, trois outils appelés), contexte : refus 400
+reconnu (`is_context_refusal=True`). Sur ce prompt synthétique, l'estimation en
+caractères a donné ~39 993 tokens pour 41 496 comptés par le serveur (0,96) : le
+tokeniseur de Qwen3.5 est un peu moins économe que celui de Gemma sur un texte
+répétitif. Sur du contenu réel, rien n'est mesuré encore ; la marge est à
+surveiller (`CARACTERES_PAR_TOKEN`, `context_budget.py`), d'autant que la fenêtre
+est deux fois plus étroite.
+
+`scripts/vllm_bench.py` reste un outil de mesure du tool calling d'un serveur
+OpenAI-compatible, y compris du central :
+`uv run python scripts/vllm_bench.py --base-url http://127.0.0.1:8080/v1 --model chat --api-key <clé>`.
+
+**Tout ce qui suit (§1 à §7) est l'HISTORIQUE des mesures faites avec vLLM et
+Gemma 4 (septembre 2026)**, conservé tel quel : il documente pourquoi le tool
+calling décide, et reste valable pour qui reviendrait à un serveur vLLM.
+
+---
+
+# Historique : le moteur vLLM, ce qui est mesuré
+
+Le projet n'a eu qu'un moteur : **vLLM**, servi par le dépôt compagnon
 [`llm-service`](https://github.com/floSa/llm-service) sur le port hôte **8100**,
 avec le modèle **`google/gemma-4-E4B-it-qat-w4a16-ct`**. C'est la page de ce
 moteur : les options dont le système dépend, ce qui casse sans elles, les

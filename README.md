@@ -31,7 +31,7 @@ Rien ne sort de la machine.
 - Postgres, DuckDB, CSV, Excel : les sources
 - sqlglot : la relecture du SQL produit
 - Docker : le bac à sable d'exécution
-- **N'importe quel LLM on-premise**, derrière une API compatible OpenAI avec appel d'outils
+- **Le service LLM central (LLM-Service)** : API compatible OpenAI avec appel d'outils, `http://127.0.0.1:8080/v1` (ou `http://llm-central:8080/v1` sur le réseau Docker `llm-net`), modèle `chat`, clé `LITELLM_MASTER_KEY` à poser dans `DAA_LLM_API_KEY` du `.env`. Fenêtre : 16 384 tokens par requête (prompt + réponse). Tout autre LLM compatible OpenAI convient, par simple changement d'URL
 
 ## Comment il fonctionne
 

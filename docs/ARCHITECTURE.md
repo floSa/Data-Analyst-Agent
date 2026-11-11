@@ -50,7 +50,7 @@ flowchart TB
     end
 
     subgraph infra["Infrastructure locale"]
-        MOTEUR["LLM sur site<br/>(vLLM, port 8100)"]
+        MOTEUR["LLM central<br/>(LLM-Service, port 8080)"]
         SBX["Bac à sable Docker<br/>noyau Jupyter, sans réseau"]
         PG[("Postgres")]
         FILES[("CSV, Excel, DuckDB")]
@@ -457,15 +457,16 @@ tests/
 
 ## 7. Configuration (`DAA_*`)
 
-Tous les réglages passent par variable d'environnement ou `.env`. `Settings` (pydantic-settings) fait foi ; ce tableau en reprend les 51 champs.
+Tous les réglages passent par variable d'environnement ou `.env`. `Settings` (pydantic-settings) fait foi ; ce tableau en reprend les champs.
 
 ### LLM mutualisé
 
 | Variable | Défaut | Rôle |
 |---|---|---|
-| `DAA_LLM_BASE_URL` | `http://localhost:8100/v1` | URL de l'API compatible OpenAI |
-| `DAA_LLM_API_KEY` | *(vide)* | Clé envoyée en `Authorization` |
-| `DAA_LLM_MODEL` | `google/gemma-4-E4B-it-qat-w4a16-ct` | Nom du modèle servi |
+| `DAA_LLM_BASE_URL` | `http://127.0.0.1:8080/v1` | URL de l'API compatible OpenAI (`http://llm-central:8080/v1` depuis le réseau `llm-net`) |
+| `DAA_LLM_API_KEY` | *(vide)* | Clé envoyée en `Authorization` ; obligatoire face au service central (`LITELLM_MASTER_KEY`) |
+| `DAA_LLM_MODEL` | `chat` | Nom du modèle servi (Qwen3.5-4B) |
+| `DAA_LLM_THINKING` | `false` | Réflexion du modèle (`chat_template_kwargs.enable_thinking`), coupée par requête |
 | `DAA_LLM_TEMPERATURE` | `0.0` | Température |
 | `DAA_LLM_TIMEOUT` | `120.0` s | Délai d'un appel |
 | `DAA_LLM_MAX_RETRIES` | `2` | Réessais sur erreur transitoire |
@@ -504,7 +505,7 @@ Règles de rédaction : [rediger-un-dictionnaire-de-source.md](rediger-un-dictio
 | `DAA_CONTEXT_CODE_WINDOW` | `8` | Codes réinjectés au catalogue (`0` : sans fenêtre) |
 | `DAA_RAPPEL_REQUEST_LIMIT` | `5` | Appels maximaux de l'agent de rappel |
 | `DAA_CONTEXT_TOKEN_BUDGET` | `8000` | Budget du prompt du planificateur (`0` : sans budget) |
-| `DAA_CONTEXT_MODEL_WINDOW` | `32768` | Fenêtre du modèle servi, pour détecter un débordement |
+| `DAA_CONTEXT_MODEL_WINDOW` | `16384` | Fenêtre du modèle servi, pour détecter un débordement |
 | `DAA_CONTEXT_OVERFLOW_RATIO` | `0.4` | Seuil de détection quand la fenêtre est inconnue |
 
 ### Authentification et sessions
@@ -590,6 +591,6 @@ Sans effet à l'échelle visée (10 à 20 utilisateurs) ; à reprendre si elle c
 | PyYAML | Catalogue, registre, comptes | MIT |
 | argon2-cffi | Empreintes de mots de passe | MIT |
 | python-multipart | Formulaire de connexion | Apache-2.0 |
-| vLLM | Serveur du LLM sur site ; remplaçable par tout serveur compatible OpenAI | Apache-2.0 |
+| LLM-Service (LiteLLM, llama.cpp) | Serveur du LLM central ; remplaçable par tout serveur compatible OpenAI | MIT / MIT |
 | Modèle de langage servi | Poids du modèle | Licence de son éditeur, à vérifier à chaque changement de modèle |
 | Ce projet | Code applicatif | MIT annoncé ; aucun fichier `LICENSE` à ce jour |
