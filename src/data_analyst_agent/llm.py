@@ -6,8 +6,9 @@ les tests le remplacent par TestModel/FunctionModel — jamais d'appel réseau
 dans la suite par défaut ni en CI.
 
 Le serveur n'est pas nommé ici. Il expose `/v1/chat/completions` (service
-central LLM-Service : LiteLLM devant llama.cpp, docs/MOTEUR.md) et ce module ne connaît qu'une URL, une clé d'API facultative,
-un délai et un nombre de réessais. Le déplacer ne touche que le `.env`.
+central LLM-Service : LiteLLM devant llama.cpp, docs/MOTEUR.md) et ce module
+ne connaît qu'une URL, une clé d'API, un délai et un nombre de réessais.
+Le déplacer ne touche que le `.env`.
 """
 
 import threading

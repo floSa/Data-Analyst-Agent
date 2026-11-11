@@ -91,7 +91,8 @@ class Settings(BaseSettings):
     # entiers, et la coupe reste un filet plutôt qu'un régime. Mesuré contre le
     # tokeniseur de vLLM, 8 000 caractères de ce Markdown valent ~2 550 tokens :
     # le plafond borne donc le prompt système de l'agent SQL à ~3 800 tokens et
-    # celui de l'agent d'analyse à ~3 400, pour une fenêtre servie de 16 384 (le central) : le reste va aux tours d'outils et à la réponse.
+    # celui de l'agent d'analyse à ~3 400, pour une fenêtre servie de 16 384
+    # (le central) : le reste va aux tours d'outils et à la réponse.
     #
     # En caractères et non en tokens, comme `context_token_budget` compte des
     # caractères : il n'y a pas de tokeniseur côté client, et en embarquer un
