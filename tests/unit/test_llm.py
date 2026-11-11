@@ -30,6 +30,17 @@ def test_temperature_transmise():
     assert model.settings["temperature"] == 0.0
 
 
+def test_reflexion_coupee_par_defaut():
+    """Qwen3.5 raisonne par défaut : sans ce réglage il noie la fenêtre de 16 384."""
+    model = build_model(make_settings())
+    assert model.settings["extra_body"] == {"chat_template_kwargs": {"enable_thinking": False}}
+
+
+def test_reflexion_activable():
+    model = build_model(make_settings(llm_thinking=True))
+    assert model.settings["extra_body"]["chat_template_kwargs"]["enable_thinking"] is True
+
+
 def test_cle_dapi_transmise():
     """Un serveur lancé avec --api-key rejette toute requête sans Authorization."""
     model = build_model(make_settings(llm_api_key="jeton-vllm"))

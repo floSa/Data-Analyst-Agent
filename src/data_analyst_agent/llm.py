@@ -5,8 +5,8 @@ UN SEUL modèle langage pour tout le système — routage, SQL, code, synthèse
 les tests le remplacent par TestModel/FunctionModel — jamais d'appel réseau
 dans la suite par défaut ni en CI.
 
-Le serveur n'est pas nommé ici. Il expose `/v1/chat/completions` (vLLM,
-docs/MOTEUR.md) et ce module ne connaît qu'une URL, une clé d'API facultative,
+Le serveur n'est pas nommé ici. Il expose `/v1/chat/completions` (service
+central LLM-Service : LiteLLM devant llama.cpp, docs/MOTEUR.md) et ce module ne connaît qu'une URL, une clé d'API facultative,
 un délai et un nombre de réessais. Le déplacer ne touche que le `.env`.
 """
 
@@ -47,7 +47,13 @@ def build_model(settings: Settings | None = None) -> Model:
     return OpenAIChatModel(
         settings.llm_model,
         provider=OpenAIProvider(openai_client=client),
-        settings=ModelSettings(temperature=settings.llm_temperature),
+        settings=ModelSettings(
+            temperature=settings.llm_temperature,
+            # Réflexion coupée par requête (Qwen3.5 raisonne par défaut) : sans
+            # elle, le raisonnement mange la fenêtre de 16 384 tokens du central
+            # avant la moindre réponse ou le moindre appel d'outil.
+            extra_body={"chat_template_kwargs": {"enable_thinking": settings.llm_thinking}},
+        ),
     )
 
 
@@ -60,6 +66,7 @@ def _empreinte(settings: Settings) -> tuple:
         settings.llm_timeout,
         settings.llm_max_retries,
         settings.llm_temperature,
+        settings.llm_thinking,
     )
 
 

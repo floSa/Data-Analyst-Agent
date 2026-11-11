@@ -37,21 +37,25 @@ class Settings(BaseSettings):
     # --- LLM mutualisé (docs/CADRAGE.md §5) ---
     # Un seul modèle langage pour tout le système.
     #
-    # L'application ne parle que /v1/chat/completions, que vLLM sert sur le
-    # service central. Déplacer le serveur, c'est changer cette URL — et rien
-    # d'autre côté code (audit §4.1). Le défaut vise le port du service local.
-    llm_base_url: str = "http://localhost:8100/v1"
-    # Clé d'API, EXIGÉE par un vLLM lancé avec `--api-key` : il rejette alors
-    # toute requête sans en-tête `Authorization`. Vide = pas d'authentification
-    # (le SDK OpenAI pose sa clé factice, qu'il exige non nulle même quand le
-    # serveur s'en moque).
+    # L'application ne parle que /v1/chat/completions, servi par le service
+    # central LLM-Service (LiteLLM devant llama.cpp). Déplacer le serveur, c'est
+    # changer cette URL — et rien d'autre côté code (audit §4.1). Le défaut vise
+    # le service central sur l'hôte ; depuis un conteneur rattaché au réseau
+    # Docker « llm-net », c'est http://llm-central:8080/v1.
+    llm_base_url: str = "http://127.0.0.1:8080/v1"
+    # Clé d'API, EXIGÉE par le service central (LITELLM_MASTER_KEY de
+    # LLM-Service) : il rejette toute requête sans en-tête `Authorization`.
+    # Secret : elle vit dans le `.env` (non suivi), jamais dans un fichier
+    # versionné. Vide = pas d'authentification (le SDK OpenAI pose sa clé
+    # factice, qu'il exige non nulle même quand le serveur s'en moque).
     llm_api_key: str = ""
-    # Le modèle réellement servi par le central. CADRAGE §5 visait
-    # qwen3-coder:30b, qui n'a jamais été chargé : ce repli échouait donc en
-    # `404 model not found`, et le masquage des erreurs ne laissait qu'un
-    # « je n'ai pas réussi à interpréter la demande » dans la réponse. Le repli
-    # doit désigner ce qui existe ; le `.env` reste maître.
-    llm_model: str = "google/gemma-4-E4B-it-qat-w4a16-ct"
+    # Le nom de modèle exposé par le service central : « chat » (Qwen3.5-4B).
+    llm_model: str = "chat"
+    # Réflexion du modèle (Qwen3.5 raisonne par défaut). Coupée par défaut : la
+    # génération de SQL et le tool calling n'en ont pas besoin, et elle consomme
+    # la fenêtre de 16 384 tokens du central. Coupée par requête via
+    # `chat_template_kwargs.enable_thinking`. True = on laisse le modèle réfléchir.
+    llm_thinking: bool = False
     llm_temperature: float = 0.0
     # Délai d'un appel LLM et nombre de réessais. Les défauts du SDK OpenAI
     # (600 s, 2 réessais) n'étaient pas une décision : un appel bloqué retenait
@@ -87,7 +91,7 @@ class Settings(BaseSettings):
     # entiers, et la coupe reste un filet plutôt qu'un régime. Mesuré contre le
     # tokeniseur de vLLM, 8 000 caractères de ce Markdown valent ~2 550 tokens :
     # le plafond borne donc le prompt système de l'agent SQL à ~3 800 tokens et
-    # celui de l'agent d'analyse à ~3 400, pour une fenêtre servie de 32 768.
+    # celui de l'agent d'analyse à ~3 400, pour une fenêtre servie de 16 384 (le central) : le reste va aux tours d'outils et à la réponse.
     #
     # En caractères et non en tokens, comme `context_token_budget` compte des
     # caractères : il n'y a pas de tokeniseur côté client, et en embarquer un
@@ -201,16 +205,17 @@ class Settings(BaseSettings):
     # ou une question très longue. Au dépassement, les objets intermédiaires les
     # plus ANCIENS sont retirés jusqu'à ce que ça tienne — la dégradation est
     # ordonnée, jamais subie. À tenir NETTEMENT sous la fenêtre du serveur
-    # (`--max-model-len`, 32768 sur le service central) : le budget ne couvre
+    # (16384 sur le service central, prompt ET réponse) : le budget ne couvre
     # que le planificateur, les autres agents ajoutent leurs propres tours.
     # 0 désactive le budget.
     context_token_budget: int = 8000
-    # Fenêtre de contexte RÉELLEMENT servie par le serveur (`--max-model-len`,
-    # 32768 sur le service central — et non les 131 072 que déclare le modèle).
-    # Elle ne règle rien côté client : elle sert à
-    # CONSTATER un débordement, en confrontant `prompt_eval_count` à ce qu'on a
+    # Fenêtre de contexte RÉELLEMENT servie par le serveur : 16 384 tokens par
+    # requête (prompt + réponse) sur le service central LLM-Service, qui ne
+    # peut pas être relevée depuis ce dépôt (c'était 32 768 sur l'ancien vLLM).
+    # Elle ne règle rien côté client : elle sert à CONSTATER un débordement, en
+    # confrontant les tokens de prompt comptés par le serveur à ce qu'on a
     # envoyé. 0 = fenêtre inconnue, la détection se rabat sur l'écart grossier.
-    context_model_window: int = 32768
+    context_model_window: int = 16384
     # Filet quand la fenêtre est inconnue ou mal déclarée : on signale si le
     # serveur dit avoir évalué moins de cette fraction de notre estimation.
     # 0,4 est très en dessous de ce que l'imprécision du compteur peut

@@ -175,7 +175,7 @@ def test_url_du_moteur_par_defaut():
     ``_env_file=None`` coupe le fichier ; la fixture d'isolation coupe les
     variables du poste.
     """
-    assert Settings(_env_file=None).llm_base_url == "http://localhost:8100/v1"
+    assert Settings(_env_file=None).llm_base_url == "http://127.0.0.1:8080/v1"
 
 
 def test_modele_par_defaut():
@@ -185,7 +185,16 @@ def test_modele_par_defaut():
     masquage des erreurs n'en laisse qu'un « je n'ai pas réussi à interpréter la
     demande » dans la réponse — un symptôme qui ne dit pas sa cause.
     """
-    assert Settings(_env_file=None).llm_model == "google/gemma-4-E4B-it-qat-w4a16-ct"
+    assert Settings(_env_file=None).llm_model == "chat"
+
+
+def test_fenetre_et_reflexion_par_defaut():
+    """Le central sert 16 384 tokens par requête et raisonne par défaut : on le coupe."""
+    reglages = Settings(_env_file=None)
+    assert reglages.context_model_window == 16384
+    assert reglages.llm_thinking is False
+    # Le budget du planificateur doit tenir nettement sous la fenêtre servie.
+    assert reglages.context_token_budget < reglages.context_model_window // 2
 
 
 def test_le_env_prime_sur_le_defaut(monkeypatch):
