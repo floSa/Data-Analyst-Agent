@@ -66,12 +66,17 @@ services:
     group_add:
       - "${DAA_DOCKER_GID:?DAA_DOCKER_GID manquant — stat -c %g /var/run/docker.sock}"
 
-    # Le moteur LLM et Postgres tournent SUR L'HÔTE, pas dans ce compose : le
-    # moteur est un service partagé (dépôt llm-service) qu'on ne relance pas
-    # ici. `host-gateway` donne au conteneur un nom pour joindre son hôte, ce
+    # Le moteur LLM et Postgres tournent HORS de ce compose : le moteur est le
+    # service central LLM-Service (dépôt à part) qu'on ne relance pas ici.
+    # L'application rejoint son réseau Docker externe « llm-net » et le joint
+    # par son nom : http://llm-central:8080/v1 (cf. DAA_LLM_BASE_URL).
+    # `host-gateway` donne en plus un nom pour joindre l'hôte (Postgres), ce
     # que `localhost` ne fait pas depuis un conteneur.
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - llm-net
 
     # Journaux bornés : sans cela, un fichier json grossit jusqu'à remplir le
     # disque, et un service qui tombe faute de place est un service qu'on n'a
@@ -102,7 +107,7 @@ services:
     # prend, pas un défaut qu'on subit.
     ports:
       - "${DAA_HTTPS_BIND:-0.0.0.0}:${DAA_HTTPS_PORT:-8443}:443"
-      - "${DAA_HTTPS_BIND:-0.0.0.0}:${DAA_HTTP_REDIRECT_PORT:-8080}:80"
+      - "${DAA_HTTPS_BIND:-0.0.0.0}:${DAA_HTTP_REDIRECT_PORT:-8081}:80"
 
     # Adresse FIXE, parce que c'est elle que l'application déclare de confiance.
     # Laissée au hasard, la déclaration viserait à côté au premier redémarrage
@@ -179,6 +184,10 @@ services:
 # (`docker network ls`, puis `inspect`) : DAA_NETWORK_SUBNET **et** DAA_PROXY_IP,
 # qui doit tomber dedans. DAA_TRUSTED_PROXIES suit tout seul.
 networks:
+  # Réseau du service central LLM-Service, créé par son propre dépôt : il doit
+  # exister avant le démarrage (`docker network ls | grep llm-net`).
+  llm-net:
+    external: true
   default:
     ipam:
       config:

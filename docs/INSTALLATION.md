@@ -25,10 +25,10 @@ L'exploitation courante (journaux, sauvegarde, restauration, mise à jour) : [EX
 | Docker avec le plugin `compose` | Exécute l'application et le bac à sable | `docker compose version` |
 | systemd | Relance le service au démarrage | `systemctl --version` |
 | `sudo` | Fichier d'environnement et unité sous `/etc` | `sudo -v` |
-| Un LLM servi sur site, derrière une API compatible OpenAI avec appel d'outils | Le raisonnement de l'agent | `curl http://localhost:8100/v1/models` |
+| Le service LLM central (LLM-Service), API compatible OpenAI avec appel d'outils, et son réseau Docker `llm-net` | Le raisonnement de l'agent | `curl -H "Authorization: Bearer <clé>" http://127.0.0.1:8080/v1/models` (doit lister `chat`) ; `docker network ls \| grep llm-net` |
 | Postgres | Seulement pour une source `postgres` | `pg_isready` |
 
-- Le moteur LLM est installé séparément. Réglages requis pour l'appel d'outils : [MOTEUR.md](MOTEUR.md).
+- Le moteur LLM est installé séparément (dépôt LLM-Service) ; ce projet n'y touche pas. Il sert 16 384 tokens par requête, prompt et réponse : [MOTEUR.md](MOTEUR.md).
 - Python, `uv` et les dépendances sont dans l'image : la machine n'a besoin que de Docker.
 
 ### Ressources matérielles
@@ -99,8 +99,9 @@ Valeurs obligatoires :
 | Variable | Valeur | Obtention |
 |---|---|---|
 | `DAA_DOCKER_GID` | gid du groupe propriétaire de la socket Docker | `stat -c %g /var/run/docker.sock` |
-| `DAA_LLM_BASE_URL` | URL du moteur, vue depuis le conteneur | `http://host.docker.internal:8100/v1` (et non `localhost`) |
-| `DAA_LLM_MODEL` | nom du modèle servi | `curl http://localhost:8100/v1/models` |
+| `DAA_LLM_BASE_URL` | URL du moteur, vue depuis le conteneur (réseau `llm-net`) | `http://llm-central:8080/v1` (et non `localhost`) |
+| `DAA_LLM_MODEL` | nom du modèle servi | `chat` |
+| `DAA_LLM_API_KEY` | clé du service central (secret) | `LITELLM_MASTER_KEY` dans le `.env` de LLM-Service |
 
 Pour une source Postgres : `DAA_PG_HOST` (`host.docker.internal` si la base est sur la machine), `DAA_PG_PORT`, `DAA_PG_USER`, `DAA_PG_PASSWORD`.
 
@@ -199,7 +200,7 @@ sudo systemctl restart daa
 curl --cacert /etc/data-analyst-agent/tls/ca.crt https://$(hostname -f):8443/health
 ```
 
-Le service écoute sur `8443` (HTTPS) et `8080` (redirection vers `8443`).
+Le service écoute sur `8443` (HTTPS) et `8081` (redirection vers `8443`).
 
 ## 9. Créer le premier compte
 
