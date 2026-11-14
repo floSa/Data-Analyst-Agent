@@ -9,9 +9,18 @@ Le projet se branche sur le **service LLM central** (dépôt compagnon
 |---|---|
 | `DAA_LLM_BASE_URL` | `http://127.0.0.1:8080/v1` sur l'hôte ; `http://llm-central:8080/v1` depuis un conteneur du réseau Docker externe `llm-net` |
 | `DAA_LLM_MODEL` | `chat` (Qwen3.5-4B) |
-| `DAA_LLM_API_KEY` | `LITELLM_MASTER_KEY` du `.env` de LLM-Service, dans le `.env` de ce projet (non suivi) — jamais dans un fichier versionné |
+| `DAA_LLM_API_KEY` | clé propre « data-analyst-agent » (jamais la clé maîtresse de LLM-Service), dans le `.env` de ce projet (non suivi) — jamais dans un fichier versionné |
 | `DAA_LLM_THINKING` | `false` : Qwen3.5 réfléchit par défaut ; l'application le coupe à chaque requête (`extra_body.chat_template_kwargs.enable_thinking=false`) |
 | `DAA_CONTEXT_MODEL_WINDOW` | `16384` |
+
+Clé propre, depuis le 14/11/2026, créée et écrite dans le `.env` par
+`~/mes_projets/Projet-IA/LLM-Service/scripts/cle.sh creer data-analyst-agent --dans <dépôt>/.env --noms DAA_LLM_BASE_URL,DAA_LLM_API_KEY --hote`
+(procédure : `LLM-Service/docs/brancher-une-application.md`). Révocation :
+`scripts/cle.sh revoquer data-analyst-agent` ; consommation :
+`scripts/cle.sh consommation` (depuis le dépôt LLM-Service).
+
+Essai réel du 14/11/2026 avec cette clé :
+`uv run pytest tests/integration/test_llm_live.py -m live --no-cov` → 1 passed.
 
 **Limite à connaître : 16 384 tokens par requête, prompt ET réponse** (32 768
 avec l'ancien vLLM). Elle appartient à LLM-Service et ne se relève pas d'ici.

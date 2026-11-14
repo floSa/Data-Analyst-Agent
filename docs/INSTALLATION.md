@@ -101,7 +101,7 @@ Valeurs obligatoires :
 | `DAA_DOCKER_GID` | gid du groupe propriétaire de la socket Docker | `stat -c %g /var/run/docker.sock` |
 | `DAA_LLM_BASE_URL` | URL du moteur, vue depuis le conteneur (réseau `llm-net`) | `http://llm-central:8080/v1` (et non `localhost`) |
 | `DAA_LLM_MODEL` | nom du modèle servi | `chat` |
-| `DAA_LLM_API_KEY` | clé du service central (secret) | `LITELLM_MASTER_KEY` dans le `.env` de LLM-Service |
+| `DAA_LLM_API_KEY` | clé propre de l'application (secret), jamais la clé maîtresse de LLM-Service | `~/mes_projets/Projet-IA/LLM-Service/scripts/cle.sh creer data-analyst-agent --dans <fichier d'environnement> --noms DAA_LLM_BASE_URL,DAA_LLM_API_KEY` (sans `--hote` : adresse `llm-central` du conteneur) |
 
 Pour une source Postgres : `DAA_PG_HOST` (`host.docker.internal` si la base est sur la machine), `DAA_PG_PORT`, `DAA_PG_USER`, `DAA_PG_PASSWORD`.
 

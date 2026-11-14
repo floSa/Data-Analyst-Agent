@@ -43,8 +43,8 @@ class Settings(BaseSettings):
     # le service central sur l'hôte ; depuis un conteneur rattaché au réseau
     # Docker « llm-net », c'est http://llm-central:8080/v1.
     llm_base_url: str = "http://127.0.0.1:8080/v1"
-    # Clé d'API, EXIGÉE par le service central (LITELLM_MASTER_KEY de
-    # LLM-Service) : il rejette toute requête sans en-tête `Authorization`.
+    # Clé d'API, EXIGÉE par le service central (clé propre de l'application,
+    # créée par LLM-Service/scripts/cle.sh creer) : il rejette toute requête sans en-tête `Authorization`.
     # Secret : elle vit dans le `.env` (non suivi), jamais dans un fichier
     # versionné. Vide = pas d'authentification (le SDK OpenAI pose sa clé
     # factice, qu'il exige non nulle même quand le serveur s'en moque).

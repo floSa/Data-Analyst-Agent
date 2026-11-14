@@ -19,7 +19,8 @@ n'est lu dans le `.env`. Il vise un serveur jetable, pas l'instance en service.
     uv run python scripts/vllm_bench.py --base-url http://localhost:8000/v1 \
         --model Qwen/Qwen2.5-1.5B-Instruct
 
-Contre le service LLM central (clé = LITELLM_MASTER_KEY de LLM-Service ; le
+Contre le service LLM central (clé propre « data-analyst-agent », créée par
+LLM-Service/scripts/cle.sh creer, jamais la clé maîtresse ; le
 prompt de l'épreuve « contexte » dépasse ses 16 384 tokens, donc un refus 400
 est attendu — c'est ce que l'épreuve vérifie) :
 

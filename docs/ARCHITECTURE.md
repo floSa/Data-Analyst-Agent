@@ -464,7 +464,7 @@ Tous les réglages passent par variable d'environnement ou `.env`. `Settings` (p
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `DAA_LLM_BASE_URL` | `http://127.0.0.1:8080/v1` | URL de l'API compatible OpenAI (`http://llm-central:8080/v1` depuis le réseau `llm-net`) |
-| `DAA_LLM_API_KEY` | *(vide)* | Clé envoyée en `Authorization` ; obligatoire face au service central (`LITELLM_MASTER_KEY`) |
+| `DAA_LLM_API_KEY` | *(vide)* | Clé envoyée en `Authorization` ; obligatoire face au service central (clé propre « data-analyst-agent », créée par `LLM-Service/scripts/cle.sh creer`, jamais la clé maîtresse) |
 | `DAA_LLM_MODEL` | `chat` | Nom du modèle servi (Qwen3.5-4B) |
 | `DAA_LLM_THINKING` | `false` | Réflexion du modèle (`chat_template_kwargs.enable_thinking`), coupée par requête |
 | `DAA_LLM_TEMPERATURE` | `0.0` | Température |

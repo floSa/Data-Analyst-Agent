@@ -31,7 +31,7 @@ Rien ne sort de la machine.
 - Postgres, DuckDB, CSV, Excel : les sources
 - sqlglot : la relecture du SQL produit
 - Docker : le bac à sable d'exécution
-- **Le service LLM central (LLM-Service)** : API compatible OpenAI avec appel d'outils, `http://127.0.0.1:8080/v1` (ou `http://llm-central:8080/v1` sur le réseau Docker `llm-net`), modèle `chat`, clé `LITELLM_MASTER_KEY` à poser dans `DAA_LLM_API_KEY` du `.env`. Fenêtre : 16 384 tokens par requête (prompt + réponse). Tout autre LLM compatible OpenAI convient, par simple changement d'URL
+- **Le service LLM central (LLM-Service)** : API compatible OpenAI avec appel d'outils, `http://127.0.0.1:8080/v1` (ou `http://llm-central:8080/v1` sur le réseau Docker `llm-net`), modèle `chat`, clé propre de l'application (jamais la clé maîtresse de LLM-Service), écrite dans `DAA_LLM_API_KEY` du `.env` par `~/mes_projets/Projet-IA/LLM-Service/scripts/cle.sh creer data-analyst-agent --dans <dépôt>/.env --noms DAA_LLM_BASE_URL,DAA_LLM_API_KEY --hote` (procédure : `LLM-Service/docs/brancher-une-application.md`). Fenêtre : 16 384 tokens par requête (prompt + réponse). Tout autre LLM compatible OpenAI convient, par simple changement d'URL
 
 ## Comment il fonctionne
 
